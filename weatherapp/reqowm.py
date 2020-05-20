@@ -101,7 +101,7 @@ def main():
     # Wait up to 1 second for events.
     producer.poll(1)
 
-    printing_results(results)
+    # printing_results(results)
 
 
 if __name__ == '__main__':

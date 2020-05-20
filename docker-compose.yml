@@ -8,6 +8,8 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
   weatherapp:
     build: ./weatherapp/
+  consumer:
+    build: ./consumer/
   kafka:
     # "`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-'"`-._,-
     # An important note about accessing Kafka from clients on other machines:
