@@ -3,7 +3,8 @@ import logging
 from confluent_kafka import Consumer
 
 c = Consumer({
-    'bootstrap.servers': 'kafka:29092',
+    # 'bootstrap.servers': 'kafka:29092', # for docker-compose
+    'bootstrap.servers': 'localhost:29092',
     'group.id': 'mygroup',
     'auto.offset.reset': 'earliest'
 })
@@ -23,7 +24,8 @@ while True:
                         datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO,
                         format='%(asctime)s - %(name)s - %(levelname)s '
                                '- %(message)s')
-    logging.info('Received message: {}'.format(msg.value().decode('utf-8')))
+
+    logging.info('Received message: {}'.format(msg))
     # print('Received message: {}'.format(msg.value().decode('utf-8')))
 
 c.close()

@@ -19,6 +19,7 @@ The Example of usage:
 """
 import logging
 import socket
+import json
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 
@@ -81,7 +82,9 @@ def printing_results(results):
 
 
 def main():
-    conf = {'bootstrap.servers': "kafka:29092",
+    conf = {
+        # 'bootstrap.servers': "kafka:29092", # for docker-compose
+        'bootstrap.servers': "localhost:29092",
             'client.id': socket.gethostname()}
     producer = Producer(conf)
 
@@ -95,9 +98,14 @@ def main():
         results = list(executor.map(request_current_weather,
                                     SAMPLE_OF_CITIES, timeout=12, chunksize=4))
 
-    for res_dict in results:
-        for meaning, value in res_dict.items():
-            producer.produce(TOPIC, key=meaning, value=str(value))
+    # for res_dict in results:
+    #     for meaning, value in res_dict.items():
+    #         producer.produce(TOPIC, key=meaning, value=str(value))
+    for index, result_dict in enumerate(results):
+        print(SAMPLE_OF_CITIES[index])
+        print(str(json.dumps(result_dict)))
+        producer.produce(TOPIC, key=SAMPLE_OF_CITIES[index],
+                         value=str(json.dumps(result_dict)))
 
     # Wait up to 1 second for events.
     producer.poll(1)
@@ -107,6 +115,7 @@ def main():
                         format='%(asctime)s - %(name)s - %(levelname)s '
                                '- %(message)s')
     logging.info(results)
+
 
     # printing_results(results)
 
