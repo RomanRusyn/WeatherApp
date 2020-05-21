@@ -17,6 +17,7 @@ The Example of usage:
     temp_max: 20
 
 """
+import logging
 import socket
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
@@ -80,26 +81,32 @@ def printing_results(results):
 
 
 def main():
-    conf = {'bootstrap.servers': "127.0.0.1:9092,192.168.99.101:9092",
+    conf = {'bootstrap.servers': "kafka:29092",
             'client.id': socket.gethostname()}
     producer = Producer(conf)
 
-    def acked(err, msg):
-        if err is not None:
-            print("Failed to deliver message: %s: %s" % (str(msg), str(err)))
-        else:
-            print("Message produced: %s" % (str(msg)))
+    # def acked(err, msg):
+    #     if err is not None:
+    #         print("Failed to deliver message: %s: %s" % (str(msg), str(err)))
+    #     else:
+    #         print("Message produced: %s" % (str(msg)))
 
     with ThreadPoolExecutor(max_workers=5) as executor:
         results = list(executor.map(request_current_weather,
                                     SAMPLE_OF_CITIES, timeout=12, chunksize=4))
 
     for res_dict in results:
-        for k, v in res_dict.items():
-            producer.produce(TOPIC, key=k, value=str(v), callback=acked)
+        for meaning, value in res_dict.items():
+            producer.produce(TOPIC, key=meaning, value=str(value))
 
     # Wait up to 1 second for events.
     producer.poll(1)
+
+    logging.basicConfig(filename='weather_app.log', filemode='w',
+                        datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO,
+                        format='%(asctime)s - %(name)s - %(levelname)s '
+                               '- %(message)s')
+    logging.info(results)
 
     # printing_results(results)
 

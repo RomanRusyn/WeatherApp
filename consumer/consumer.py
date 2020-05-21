@@ -1,8 +1,9 @@
+import logging
+
 from confluent_kafka import Consumer
 
-
 c = Consumer({
-    'bootstrap.servers': '127.0.0.1:9092,192.168.99.101:9092',
+    'bootstrap.servers': 'kafka:29092',
     'group.id': 'mygroup',
     'auto.offset.reset': 'earliest'
 })
@@ -18,6 +19,11 @@ while True:
         print("Consumer error: {}".format(msg.error()))
         continue
 
-    print('Received message: {}'.format(msg.value().decode('utf-8')))
+    logging.basicConfig(filename='consumer_results.log', filemode='w',
+                        datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO,
+                        format='%(asctime)s - %(name)s - %(levelname)s '
+                               '- %(message)s')
+    logging.info('Received message: {}'.format(msg.value().decode('utf-8')))
+    # print('Received message: {}'.format(msg.value().decode('utf-8')))
 
 c.close()
