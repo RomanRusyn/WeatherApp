@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu
 
 WORKDIR /usr/src/app
 
@@ -6,7 +6,6 @@ COPY . .
 
 
 RUN apt-get update && apt-get install -y \
-  vim \
   python3 \
   python3-pip
 

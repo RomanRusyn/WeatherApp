@@ -1,4 +1,4 @@
-"""Script for parsing weather site
+"""Script for parsing weather site and using kafka producer
 
 Script takes information from "https://openweathermap.org/".
 API key for Roman is "53e054d0ccc375a2b5d0b943fcb84ee5". Need key for using
@@ -13,13 +13,13 @@ The Example of usage:
     Weather in {city} for today is:
     conditions: light rain
     temp: 20
-    temp_min: 20
-    temp_max: 20
+    humidity: 26
+    pressure: 1016
 
 """
+import json
 import logging
 import socket
-import json
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
 
@@ -57,10 +57,7 @@ def request_current_weather(city_name):
                               params={'id': city_id, 'units': 'metric',
                                       'lang': 'en', 'APPID': APPID})
         data = result.json()
-        # print("conditions:", data['weather'][0]['description'])
-        # print("temp:", data['main']['temp'])
-        # print("temp_min:", data['main']['temp_min'])
-        # print("temp_max:", data['main']['temp_max'])
+
         result_dict = {"conditions": data['weather'][0]['description'],
                        "temp": data['main']['temp'],
                        "humidity": data['main']['humidity'],
@@ -73,6 +70,8 @@ def request_current_weather(city_name):
 
 
 def printing_results(results):
+    """Function for printing weather results into console. Its used for
+    convenient, not used in development"""
     for index, result in enumerate(results):
         print(f"Weather in {SAMPLE_OF_CITIES[index]} for today is:")
         print(f"conditions: {result['conditions']}")
@@ -81,42 +80,45 @@ def printing_results(results):
         print(f"pressure: {result['pressure']}")
 
 
-def main():
+def kafka_producer(results):
+    """Kafka producer function.
+
+    Takes the results from mapping towns and weather and pushes it to kafka
+    server and writes logs
+    """
+    logging.basicConfig(filename='weather_app.log', filemode='w',
+                        datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO,
+                        format='%(asctime)s - %(name)s - %(levelname)s '
+                               '- %(message)s')
+
     conf = {
-        # 'bootstrap.servers': "kafka:29092", # for docker-compose
         'bootstrap.servers': "localhost:29092",
-            'client.id': socket.gethostname()}
+        'client.id': socket.gethostname()}
     producer = Producer(conf)
 
-    # def acked(err, msg):
-    #     if err is not None:
-    #         print("Failed to deliver message: %s: %s" % (str(msg), str(err)))
-    #     else:
-    #         print("Message produced: %s" % (str(msg)))
-
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        results = list(executor.map(request_current_weather,
-                                    SAMPLE_OF_CITIES, timeout=12, chunksize=4))
-
-    # for res_dict in results:
-    #     for meaning, value in res_dict.items():
-    #         producer.produce(TOPIC, key=meaning, value=str(value))
     for index, result_dict in enumerate(results):
         print(SAMPLE_OF_CITIES[index])
         print(str(json.dumps(result_dict)))
         producer.produce(TOPIC, key=SAMPLE_OF_CITIES[index],
                          value=str(json.dumps(result_dict)))
 
+        logging.info('Town: {}'.format(SAMPLE_OF_CITIES[index]))
+        logging.info('Conditions: {}'.format(result_dict))
+
     # Wait up to 1 second for events.
     producer.poll(1)
 
-    logging.basicConfig(filename='weather_app.log', filemode='w',
-                        datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO,
-                        format='%(asctime)s - %(name)s - %(levelname)s '
-                               '- %(message)s')
-    logging.info(results)
 
+def main():
+    """Main function for combining together the functions of the script.
 
+    Maps weather and towns in 5 threads
+    """
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        results = list(executor.map(request_current_weather,
+                                    SAMPLE_OF_CITIES, timeout=12, chunksize=4))
+
+    kafka_producer(results)
     # printing_results(results)
 
 
@@ -124,7 +126,3 @@ if __name__ == '__main__':
     while True:
         main()
         sleep(10)
-
-    # for city in sample_of_cities:
-    #     print(f"Weather in {city} for today is:")
-    #     request_current_weather(get_city_id(city))

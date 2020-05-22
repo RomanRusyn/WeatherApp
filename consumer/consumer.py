@@ -1,31 +1,42 @@
+""""Script for getting, decoding, logging data from kafka server"""
+import json
 import logging
 
+import pandas as pd
 from confluent_kafka import Consumer
 
-c = Consumer({
-    # 'bootstrap.servers': 'kafka:29092', # for docker-compose
-    'bootstrap.servers': 'localhost:29092',
-    'group.id': 'mygroup',
-    'auto.offset.reset': 'earliest'
-})
 
-c.subscribe(['weatherForToday'])
+def main():
+    c = Consumer({
+        'bootstrap.servers': 'localhost:29092',
+        'group.id': 'mygroup',
+        'auto.offset.reset': 'earliest'
+    })
+    c.subscribe(['weatherForToday'])
+    while True:
+        msg = c.poll(1.0)
 
-while True:
-    msg = c.poll(1.0)
+        if msg is None:
+            continue
+        if msg.error():
+            print("Consumer error: {}".format(msg.error()))
+            continue
 
-    if msg is None:
-        continue
-    if msg.error():
-        print("Consumer error: {}".format(msg.error()))
-        continue
+        logging.basicConfig(filename='consumer_results.log', filemode='w',
+                            datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO,
+                            format='%(asctime)s - %(name)s - %(levelname)s '
+                                   '- %(message)s')
 
-    logging.basicConfig(filename='consumer_results.log', filemode='w',
-                        datefmt='%d-%b-%y %H:%M:%S', level=logging.INFO,
-                        format='%(asctime)s - %(name)s - %(levelname)s '
-                               '- %(message)s')
+        city = msg.key().decode('utf-8')
+        conditions = json.loads(msg.value().decode('utf-8'))
+        result_sictionary = {city: conditions}
+        print(result_sictionary)
 
-    logging.info('Received message: {}'.format(msg))
-    # print('Received message: {}'.format(msg.value().decode('utf-8')))
+        logging.info('Town: {}'.format(city))
+        logging.info(
+            'Conditions: {}'.format(conditions))
+    c.close()
 
-c.close()
+
+if __name__ == '__main__':
+    main()
