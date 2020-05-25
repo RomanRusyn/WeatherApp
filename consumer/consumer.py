@@ -30,7 +30,22 @@ def main():
         city = msg.key().decode('utf-8')
         conditions = json.loads(msg.value().decode('utf-8'))
         result_sictionary = {city: conditions}
-        print(result_sictionary)
+        result_list = []
+        result_list.append(result_sictionary)
+        # print(result_list)
+        # print(result_sictionary)
+        data = {'city': [], 'conditions': [], 'temp': [], 'humidity': [],
+                'pressure': []}
+        for dict in result_list:
+            for key, value in dict.items():
+                data['city'].append(key)
+                print(key)
+                for v_key, v_value in value.items():
+                    data[v_key].append(v_value)
+                    print(v_key, v_value)
+
+        new_data = pd.DataFrame(data=data)
+        print(new_data)
 
         logging.info('Town: {}'.format(city))
         logging.info(
