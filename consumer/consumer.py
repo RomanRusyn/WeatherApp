@@ -39,10 +39,10 @@ def main():
         for dict in result_list:
             for key, value in dict.items():
                 data['city'].append(key)
-                print(key)
+                # print(key)
                 for v_key, v_value in value.items():
                     data[v_key].append(v_value)
-                    print(v_key, v_value)
+                    # print(v_key, v_value)
 
         new_data = pd.DataFrame(data=data)
         print(new_data)
